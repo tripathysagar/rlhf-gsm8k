@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "gsm8k-utils"
+version = "0.1.0"
+description = "Shared utilities for GSM8K RLHF experiments"
+authors = [{name = "Sagar Tripathy"}]
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "regex",
+    "tqdm",
+    "transformers",
+    "datasets",
+    "trl",
+    "peft",
+    "accelerate",
+    "wandb",
+]
+
+[project.urls]
+Homepage = "https://github.com/tripathysagar/rlhf-gsm8k"
+
+[tool.setuptools]
+packages = ["gsm8k_utils"]
