@@ -33,6 +33,14 @@ def make_sft_example(ex):
     ]
     return {"messages": messages}
 
+
+# ── Dataset helpers ─────────────────────────────────────────────────────────
+
+def extract_gold(ex):
+    """Extract gold answer number from GSM8K answer field."""
+    return {"gold": ex["answer"].split("####")[-1].strip()}
+
+
 # ── Prompt formatting ───────────────────────────────────────────────────────
 
 def format_prompt(question, tokenizer):
@@ -62,8 +70,9 @@ def extract_answer(response):
 # ── Evaluation ──────────────────────────────────────────────────────────────
 
 def perf_check(model, tokenizer, test_data, batch_size=64):
-    """Evaluate model accuracy on test_data (list of dicts with 'prompt' and 'gold' keys).
-    Returns table_rows for display."""
+    """Evaluate model accuracy on test_data (HF Dataset or list of dicts with 'prompt' and 'gold' keys).
+    Returns (accuracy, table_rows)."""
+    test_data = list(test_data)
     model.eval()
     tokenizer.padding_side = "left"
 
@@ -94,14 +103,15 @@ def perf_check(model, tokenizer, test_data, batch_size=64):
                 "correct": is_correct,
                 "response": response[:200],
             })
-            table_rows.append(f"| {total} | {gold_int} | {ans} | {'✅ ' if is_correct else '❌ '} | {response[:80].replace(chr(10), ' ')} |")
+            table_rows.append(f"| {total} | {gold_int} | {ans} | {'✅  ' if is_correct else '❌  '} | {response[:80].replace(chr(10), ' ')} |")
 
     print(f"\nFinal Accuracy: {correct}/{total} = {correct/total:.2%}")
 
     model.train()
     tokenizer.padding_side = "right"
 
-    return table_rows
+    accuracy = correct / total if total > 0 else 0.0
+    return accuracy, table_rows
 
 # ── Inference helper ────────────────────────────────────────────────────────
 
