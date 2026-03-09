@@ -1,0 +1,10 @@
+torch
+regex
+tqdm
+transformers
+datasets
+trl
+peft
+accelerate
+wandb
+huggingface_hub

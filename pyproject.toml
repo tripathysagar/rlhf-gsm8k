@@ -26,3 +26,6 @@ Homepage = "https://github.com/tripathysagar/rlhf-gsm8k"
 
 [tool.setuptools]
 packages = ["gsm8k_utils"]
+
+[project.optional-dependencies]
+flash = ["flash-attn"]
