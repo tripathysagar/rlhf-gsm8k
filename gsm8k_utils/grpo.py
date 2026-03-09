@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from datasets import load_dataset, concatenate_datasets
 from trl import GRPOConfig, GRPOTrainer
 from transformers import (
-    AutoModelForCausalLM, AutoTokenizer, TrainerCallback, set_seed,
+    AutoModelForCausalLM, AutoTokenizer, set_seed,
 )
 from peft import LoraConfig, get_peft_model
 from gsm8k_utils.utils import extract_gold, format_prompt, extract_answer, perf_check
@@ -46,36 +46,25 @@ DEFAULT_CFG = dict(
 def get_device_config():
     """Auto-detect GPU capabilities for dtype, attention, and precision."""
     if not torch.cuda.is_available():
-        return dict(dtype=torch.float32, attn_impl=None, bf16=False, fp16=False)
+        return dict(dtype=torch.float32, attn_impl="eager", bf16=False, fp16=False)
     cap = torch.cuda.get_device_capability()
     is_ampere_plus = cap[0] >= 8
 
-    has_flash = False
+    attn_impl = "sdpa"
     if is_ampere_plus:
         try:
             import flash_attn
-            has_flash = True
+            attn_impl = "flash_attention_2"
         except ImportError:
-            print("⚠️ flash-attn not installed — falling back to standard attention")
+            pass
 
     return dict(
         dtype=torch.bfloat16 if is_ampere_plus else torch.float16,
-        attn_impl="flash_attention_2" if has_flash else None,
+        attn_impl=attn_impl,
         bf16=is_ampere_plus,
         fp16=not is_ampere_plus,
     )
 
-# ── Callbacks ─────────────────────────────────────────────────────────────────
-
-class VibecheckCallback(TrainerCallback):
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        if logs:
-            reward = logs.get('reward')
-            completions = logs.get('completions')
-            if reward is not None:
-                print(f"Step {state.global_step} | reward: {reward:.3f}")
-            if completions and len(completions) > 0:
-                print(f"Step {state.global_step} | Sample:\n{completions[0][:200]}...")
 
 # ── Reward ────────────────────────────────────────────────────────────────────
 
