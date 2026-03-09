@@ -140,7 +140,7 @@ class GRPOExperiment:
         self.model.print_trainable_parameters()
 
     def setup_trainer(self):
-        wandb.init(project=self.cfg.wandb_project, name=self.cfg.wandb_run_name)
+        wandb.init(project=self.cfg.wandb_project, name=f"{self.cfg.wandb_run_name}-seed{self.cfg.seed}")
         grpo_config = GRPOConfig(
             output_dir="grpo_qwen_gsm8k",
             num_generations=self.cfg.num_generations,
