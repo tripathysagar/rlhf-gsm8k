@@ -177,7 +177,7 @@ class GRPOExperiment:
 
     def eval(self):
         self.model = self.model.merge_and_unload()
-        accuracy, _ = perf_check(self.model, self.tokenizer, self.test_ds)
+        accuracy, _ = perf_check(self.model, self.tokenizer, self.test_ds, batch_size=128)
         wandb.log({"eval/accuracy": accuracy})
         return accuracy
 
