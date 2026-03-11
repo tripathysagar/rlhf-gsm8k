@@ -69,7 +69,7 @@ def extract_answer(response):
 
 # ── Evaluation ──────────────────────────────────────────────────────────────
 
-def perf_check(model, tokenizer, test_data, batch_size=64):
+def perf_check(model, tokenizer, test_data, batch_size=64, max_new_tokens=512):
     """Evaluate model accuracy on test_data (HF Dataset or list of dicts with 'prompt' and 'gold' keys).
     Returns (accuracy, table_rows)."""
     test_data = list(test_data)
@@ -87,7 +87,8 @@ def perf_check(model, tokenizer, test_data, batch_size=64):
 
         inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
         with torch.no_grad():
-            out = model.generate(**inputs, max_new_tokens=256)
+            out = model.generate(**inputs, max_new_tokens=max_new_tokens,
+                                 pad_token_id=tokenizer.pad_token_id)
 
         for j, (ids, gold_int) in enumerate(zip(out, golds)):
             response = tokenizer.decode(ids[inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
@@ -115,16 +116,16 @@ def perf_check(model, tokenizer, test_data, batch_size=64):
 
 # ── Inference helper ────────────────────────────────────────────────────────
 
-def infer(model, tokenizer, question):
+def infer(model, tokenizer, question, max_new_tokens=512):
     """Generate a response for a single question."""
     model.eval()
     prompt = format_prompt(question, tokenizer)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     with torch.no_grad():
         out = model.generate(
-            **inputs, max_new_tokens=256,
-            #do_sample=True, temperature=0.7, top_p=0.9, #without the random sampling we can run the inference
-            pad_token_id=tokenizer.eos_token_id,
+            **inputs, max_new_tokens=max_new_tokens,
+            do_sample=True, temperature=0.7, top_p=0.9,
+            pad_token_id=tokenizer.pad_token_id,
         )
     response = tokenizer.decode(out[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
     model.train()
