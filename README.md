@@ -2,45 +2,62 @@
 
 GRPO (Group Relative Policy Optimization) experiments on GSM8K math reasoning, exploring reward design, hyperparameter sweeps, and data mixing strategies.
 
-## Project Structure
-
-```
-gsm8k_utils/          # Shared utilities (pip-installable)
-  utils.py            # Prompt formatting, answer extraction, evaluation
-nbs/
-  00_smollm2-135M-grpo-gsm8k.ipynb   # Early GRPO experiment with SmolLM2-135M
-  00_qwen2_5_0_5B_grpo_gsm8k.ipynb   # GRPO with Qwen2.5-0.5B + reward ablation
-  01_sft.ipynb                         # SFT warm-start on GSM8K (1024 examples)
-  02_grpo.ipynb                        # Parameterized GRPO sweep framework
-```
-
-## Install
+## 📦 Install
 
 ```bash
 pip install git+https://github.com/tripathysagar/rlhf-gsm8k.git
 ```
 
-## Key Findings
+## 📁 Project Structure
 
-### Binary vs Tiered Reward
-| Reward | Pre-GRPO | Post-GRPO | Δ |
-|---|---|---|---|
-| Tiered (8.0/3.2/closeness) | 25.15% | 33.18% | +8.03% |
-| Binary (1.0/0.0) | 25.76% | **35.91%** | **+10.15%** |
+```
+gsm8k_utils/                           # Pip-installable shared library
+  ├── utils.py                         # Prompt formatting, answer extraction, evaluation
+  └── grpo.py                          # GRPOExperiment class for reproducible runs
+nbs/
+  ├── 00_smollm2-135M-grpo-gsm8k.ipynb # Early experiment (SmolLM2-135M — too small)
+  ├── 00_qwen2_5_0_5B_grpo_gsm8k.ipynb # Binary vs tiered reward ablation
+  ├── 01_sft.ipynb                      # SFT warm-start (1024 GSM8K examples)
+  └── 02_grpo_sweep.ipynb              # Hyperparameter sweep + multi-seed validation
+```
 
-Simpler binary reward outperformed shaped reward — partial credit enabled mild reward hacking.
+## 🔑 Key Results
 
-### Hyperparameter Sweep (100 steps, binary reward)
-| Param | Values Tested | Best | Accuracy |
-|---|---|---|---|
-| `num_generations` | 8, 16 | **16** | 36.4%* |
-| `beta` | 0.01, 0.02, 0.04 | **0.02** | 31.4% |
-| `learning_rate` | 1e-5, 5e-5, 1e-4 | **5e-5** | 30.3% |
-| `sft_frac` | 0.0, 0.5, 1.0 | **1.0** | 33.8% |
+### Training Pipeline: Base → SFT → GRPO
 
-*\* High run-to-run variance — multiple seeds needed to confirm.*
+| Stage | Accuracy | Δ |
+|---|---|---|
+| Base (Qwen2.5-0.5B) | 24.39% | — |
+| + SFT (1 epoch, 1024 examples) | 31.36% | +6.97% |
+| + GRPO (200 steps, best config) | **37.78% ± 2.61%** | **+6.42%** |
 
-## Models
+### Hyperparameter Sweep
 
-- Base: [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
-- SFT: [tripathysagar/Qwen2.5-0.5B-GSM8K-SFT](https://huggingface.co/tripathysagar/Qwen2.5-0.5B-GSM8K-SFT)
+Best config found (200 steps, binary reward 1.0/0.0):
+
+| Param | Values Tested | Best |
+|---|---|---|
+| `num_generations` | 8, 16 | **16** |
+| `beta` | 0.01, 0.02, 0.04 | **0.02** |
+| `learning_rate` | 1e-5, 5e-5, 1e-4 | **5e-5** |
+| `sft_frac` | 0.0, 0.5, 1.0 | **1.0** |
+
+### Multi-Seed Validation
+
+| Seed | Accuracy |
+|---|---|
+| 42 | 40.00% |
+| 1337 | 37.27% |
+| 7 | 36.06% |
+| **Mean ± std** | **37.78% ± 2.61%** |
+
+## 🤗 Models
+
+| Model | Link |
+|---|---|
+| Base | [Qwen/Qwen2.5-0.5B](https://huggingface.co/Qwen/Qwen2.5-0.5B) |
+| SFT checkpoint | [tripathysagar/Qwen2.5-0.5B-GSM8K-SFT](https://huggingface.co/tripathysagar/Qwen2.5-0.5B-GSM8K-SFT) |
+
+## 📝 Blog Post
+
+Coming soon — covering the full journey from SFT to GRPO, reward design decisions, and lessons learned.
