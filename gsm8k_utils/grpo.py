@@ -151,7 +151,10 @@ class GRPOExperiment:
             output_dir="grpo_qwen_gsm8k",
             num_generations=self.cfg.num_generations,
             max_completion_length=self.cfg.max_completion_length,
+            
             max_steps=self.cfg.max_steps,
+            num_train_epochs=self.cfg.epochs,  # for full end to end run set mac_steps = -1 leads to training for epoch
+
             per_device_train_batch_size=self.cfg.per_device_train_batch_size,
             gradient_accumulation_steps=self.cfg.gradient_accumulation_steps,
             learning_rate=self.cfg.learning_rate,
