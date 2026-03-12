@@ -16,13 +16,15 @@ from gsm8k_utils.utils import extract_gold, format_prompt, extract_answer, perf_
 DEFAULT_CFG = dict(
     # Model
     model_id        = "tripathysagar/Qwen2.5-0.5B-GSM8K-SFT",
+    hub_repo        = "tripathysagar/Qwen2.5-0.5B-GSM8K-GRPO",
     lora_r          = 16,
     lora_alpha      = 32,
 
     # GRPO
     num_generations         = 8,
-    max_completion_length   = 256,
-    max_steps               = 100,
+    max_completion_length   = 512,
+    max_steps               = -1,
+    epochs                  = 1,
     per_device_train_batch_size = 4,
     gradient_accumulation_steps = 4,
     learning_rate           = 5e-5,
@@ -30,16 +32,15 @@ DEFAULT_CFG = dict(
     warmup_steps            = 20,
 
     # wandb
-    wandb_project   = "grpo-gsm8k",
-    wandb_run_name  = "grpo-qwen2.5-0.5B-lora",
+    wandb_project  = "grpo-gsm8k",
+    wandb_run_name = "grpo-qwen2.5-0.5B-lora",
 
-    # sft data mix
+    # data
     grpo_train_size = 1024,
     sft_frac        = 0.5,
-
-    # seed
     seed            = 1337,
 )
+
 
 # ── Device detection ──────────────────────────────────────────────────────────
 
@@ -194,7 +195,7 @@ class GRPOExperiment:
         """Merge LoRA, push model + card to HF Hub."""
         from huggingface_hub import ModelCard, create_repo
         
-        self.model = self.model.merge_and_unload()
+        #self.model = self.model.merge_and_unload()
         run_url = wandb.run.get_url() if wandb.run else "N/A"
         
         model_card = f"""---
