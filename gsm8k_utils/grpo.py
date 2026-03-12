@@ -191,14 +191,17 @@ class GRPOExperiment:
         torch.cuda.empty_cache()
 
 
+    
     def save(self, accuracy):
         """Merge LoRA, push model + card to HF Hub."""
         from huggingface_hub import ModelCard, create_repo
+        from textwrap import dedent
         
-        #self.model = self.model.merge_and_unload()
+        self.model = self.model.merge_and_unload()
         run_url = wandb.run.get_url() if wandb.run else "N/A"
         
-        model_card = f"""---
+        model_card = dedent(f"""\
+    ---
     tags:
     - math
     - gsm8k
@@ -234,7 +237,7 @@ class GRPOExperiment:
     | Learning rate | {self.cfg.learning_rate} |
     | Beta (KL) | {self.cfg.beta} |
     | Num generations | {self.cfg.num_generations} |
-    | Batch size | {self.cfg.per_device_train_batch_size} × {self.cfg.gradient_accumulation_steps} (grad accum) |
+    | Batch size | {self.cfg.per_device_train_batch_size} x {self.cfg.gradient_accumulation_steps} (grad accum) |
     | Max completion length | {self.cfg.max_completion_length} |
     | Precision | bf16 |
 
@@ -250,12 +253,13 @@ class GRPOExperiment:
     ```
     {SYSTEM_PROMPT}
     ```
-    """
+    """)
         create_repo(self.cfg.hub_repo, exist_ok=True)
         ModelCard(model_card).push_to_hub(self.cfg.hub_repo)
         self.model.push_to_hub(self.cfg.hub_repo)
         self.tokenizer.push_to_hub(self.cfg.hub_repo)
         print(f"Pushed to https://huggingface.co/{self.cfg.hub_repo}")
+
 
     def __call__(self, push2hub=False):
         self.load_ds()
