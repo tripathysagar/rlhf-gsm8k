@@ -189,12 +189,80 @@ class GRPOExperiment:
         del self.model, self.trainer
         torch.cuda.empty_cache()
 
-    def __call__(self):
+
+    def save(self, accuracy):
+        """Merge LoRA, push model + card to HF Hub."""
+        from huggingface_hub import ModelCard, create_repo
+        
+        self.model = self.model.merge_and_unload()
+        run_url = wandb.run.get_url() if wandb.run else "N/A"
+        
+        model_card = f"""---
+    tags:
+    - math
+    - gsm8k
+    - grpo
+    - lora
+    - qwen2.5
+    - reinforcement-learning
+    datasets:
+    - openai/gsm8k
+    base_model: {self.cfg.model_id}
+    ---
+
+    # {self.cfg.hub_repo.split("/")[-1]}
+
+    GRPO-trained **{self.cfg.model_id}** on [GSM8K](https://huggingface.co/datasets/openai/gsm8k) for math reasoning.
+
+    ## Results
+
+    | Metric | Value |
+    |---|---|
+    | GSM8K Eval Accuracy | {accuracy:.2%} |
+    | W&B Run | [{run_url}]({run_url}) |
+
+    ## Training Details
+
+    | Parameter | Value |
+    |---|---|
+    | Base model | `{self.cfg.model_id}` |
+    | Method | GRPO + LoRA |
+    | LoRA r / alpha | {self.cfg.lora_r} / {self.cfg.lora_alpha} |
+    | LoRA targets | all-linear |
+    | Steps | {self.cfg.max_steps} |
+    | Learning rate | {self.cfg.learning_rate} |
+    | Beta (KL) | {self.cfg.beta} |
+    | Num generations | {self.cfg.num_generations} |
+    | Batch size | {self.cfg.per_device_train_batch_size} × {self.cfg.gradient_accumulation_steps} (grad accum) |
+    | Max completion length | {self.cfg.max_completion_length} |
+    | Precision | bf16 |
+
+    ## Answer Format
+
+    The model is trained to end responses with:
+    ```
+    The answer is: {{number}}.
+    ```
+
+    ## System Prompt
+
+    ```
+    {SYSTEM_PROMPT}
+    ```
+    """
+        create_repo(self.cfg.hub_repo, exist_ok=True)
+        ModelCard(model_card).push_to_hub(self.cfg.hub_repo)
+        self.model.push_to_hub(self.cfg.hub_repo)
+        self.tokenizer.push_to_hub(self.cfg.hub_repo)
+        print(f"Pushed to https://huggingface.co/{self.cfg.hub_repo}")
+
+    def __call__(self, push2hub=False):
         self.load_ds()
         self.setup_model()
         self.fmt_ds()
         self.setup_trainer()
         self.train()
         result = self.eval()
+        if push2hub: self.save(result)
         self.cleanup()
         return result
