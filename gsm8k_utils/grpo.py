@@ -246,12 +246,6 @@ class GRPOExperiment:
     ```
     The answer is: {{number}}.
     ```
-
-    ## System Prompt
-
-    ```
-    {SYSTEM_PROMPT}
-    ```
     """)
         create_repo(self.cfg.hub_repo, exist_ok=True)
         ModelCard(model_card).push_to_hub(self.cfg.hub_repo)
