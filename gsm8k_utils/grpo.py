@@ -197,7 +197,6 @@ class GRPOExperiment:
         from huggingface_hub import ModelCard, create_repo
         from textwrap import dedent
         
-        self.model = self.model.merge_and_unload()
         run_url = wandb.run.get_url() if wandb.run else "N/A"
         
         model_card = dedent(f"""\
